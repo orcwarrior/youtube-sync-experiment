@@ -1,3 +1,10 @@
+const config = {
+    port: process.env.PORT || 3000,
+    proxyPort: process.env.PROXY_PORT || 3002
+
+};
+
 module.exports = {
-    host: process.env.HOST || "http://localhost:3000"
+    ...config,
+    host: process.env.HOST || `http://localhost:${config.port}`
 };
