@@ -1,24 +1,16 @@
 const express = require("express");
 
 const app = express();
+// const {port, proxyPort} = require("./config");
 
 
-const port = 3000;
-const ytProxyPort = 3002;
-app.use(express.static("./client/"));
-const ytProxy = require("./proxy-main-youtube");
-const ytSimpleProxy = require("./proxy-simple-youtube");
-const harmonInjection = require("./harmon-injection");
+app.use("/static", express.static("./client/static"));
+app.use('/node_modules', express.static('node_modules'));
+app.get("/", (req, res) => res.sendFile(`${__dirname}/client/index.html`));
+app.get("/sync", (req, res) => res.sendFile(`${__dirname}/client/sync.html`));
 
+require("./server-socketio")(app);
 const proxyApp = express();
-// proxyApp.use("/", harmonInjection);
-proxyApp.use((req, res, next) => {
-    console.log("url: ", req.url);
-    if (!req.url.startsWith("/yts"))
-        ytProxy.web(req, res);
-    else ytSimpleProxy.web(req, res);
-});
+require("./proxies/init")(proxyApp);
 
-proxyApp.listen(ytProxyPort, () => console.log(`YT Proxy listening on port ${port}!`));
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
-require("./test-server");
+// app.listen(port, () => console.log(`Example app listening on port ${port}!`));
