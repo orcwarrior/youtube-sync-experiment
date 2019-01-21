@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sync test</title>
+</head>
+<script src="/node_modules/socket.io-client/dist/socket.io.slim.js"></script>
+<script src="/node_modules/socket-ntp/client/ntp.js"></script>
+<script src="static/scripts/sync.js"></script>
+<body>
+<h5>Client Clock sync test</h5>
+<div id="client-timedate" class="timedate">
+    <a class="mon">January</a>
+    <a class="d">1</a>,
+    <a class="y">0</a><br/>
+    <a class="h">12</a> :
+    <a class="m">00</a>:
+    <a class="s">00</a>:
+    <a class="mi">000</a>
+</div>
+<h5>CorrectedTime <span id="clk-correction">(0)</span></h5>
+<div id="corrected-timedate" class="timedate">
+    <a class="mon">January</a>
+    <a class="d">1</a>,
+    <a class="y">0</a><br/>
+    <a class="h">12</a> :
+    <a class="m">00</a>:
+    <a class="s">00</a>:
+    <a class="mi">000</a>
+</div>
+<p>Beep! added; plays deadmau every minute</p>
+<p id="sc-msg"></p>
+<audio src="static/music.mp3" preload="auto" id="test-song"></audio>
+</body>
+<style>
+    body {
+        background-color: #666;
+    }
+
+    h5 {
+        font-family: sans-serif;
+        color: #eee;
+    }
+
+    .timedate {
+        font: small-caps lighter 43px/150% "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+        text-align: left;
+        width: 50%;
+        margin: 40px auto;
+        color: #fff;
+        border-left: 3px solid yellow;
+        padding: 20px;
+    }
+</style>
+</html>
