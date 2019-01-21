@@ -1,4 +1,4 @@
-const config = require("./config");
+const config = require("../config");
 const harmon = require("harmon");
 const addScriptSrc = {
     query: "body", func: (element) => {

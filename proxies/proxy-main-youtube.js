@@ -1,6 +1,7 @@
 const httpProxy = require('http-proxy');
 const https = require("https");
-const config = require("./config");
+const config = require("../config");
+const fs = require("fs");
 
 const ytProxyOpt = {
     target: "https://www.youtube.com/",
@@ -57,7 +58,9 @@ function onProxyRes(proxyRes, req, res) {
     res.set("Access-Control-Allow-Origin", `${config.host}, youtube.com`);
 
 
-    res.write(`<script src="${config.host}/scripts/yt-injection.js" ></script>`)
+    if (proxyContentType.startsWith("text/html")) {
+        injectCustomCodeIntoMain(res);
+    }
     proxyRes.on('data', (data) => {
         res.write(processResponseData(data));
     });
@@ -75,9 +78,22 @@ function onProxyRes(proxyRes, req, res) {
     });
 }
 
+const htmlInjectFile = fs.readFileSync(`./client/yt-inject.html`, {encoding: "utf8"});
+const cssInjectFile = fs.readFileSync(`./client/static/styles/yt-inject.css`, {encoding: "utf8"});
+
+function injectCustomCodeIntoMain(res) {
+    console.log("inecting: ", htmlInjectFile);
+    res.write(`<script src="${config.host}/static/scripts/yt-injection.js"></script>`);
+    res.write(htmlInjectFile);
+    res.write(`<style>${cssInjectFile}</style>`);
+
+}
+
 function processResponseData(data) {
     const dataStr = data.toString("utf8");
-    return dataStr.replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/");
+    return dataStr
+        .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
+        // .replace("</body>", `${htmlInjectFile}<style>${cssInjectFile}</style></body>`)
 }
 
 // issues:
