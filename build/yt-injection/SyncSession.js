@@ -96,7 +96,10 @@ class SyncSession extends EventEmitter {
         console.log("receiveSyncMsg!", youtubeData);
 
         const forceOffseting = (userOffsetMs !== this._lastOffsetMs);
-        if (forceOffseting) console.warn("Video offseting will be forced this time");
+        if (forceOffseting)  {
+            console.warn("Video offseting will be forced this time");
+            this.serializeLS();
+        }
         doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs, forceOffseting});
         this._lastOffsetMs = userOffsetMs;
         this.lastYoutubeData = [youtubeData, ...lastYoutubeData].slice(0, 10);
