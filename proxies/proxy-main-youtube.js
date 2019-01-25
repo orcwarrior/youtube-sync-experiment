@@ -1,6 +1,6 @@
 const httpProxy = require('http-proxy');
 const https = require("https");
-const config = require("../config");
+const {host, hostProxy} = require("../config");
 const fs = require("fs");
 
 const ytProxyOpt = {
@@ -25,7 +25,7 @@ const ytProxyOpt = {
     //     // when request.headers.host == 'dev.localhost:3000',
     //     // override target 'http://www.example.org' to 'http://localhost:8000'
     // },
-    cookieDomainRewrite: config.host,
+    cookieDomainRewrite: host,
     logLevel: "debug",
     selfHandleResponse: true,
 
@@ -55,7 +55,7 @@ function onProxyRes(proxyRes, req, res) {
     res.set("cookie", proxyRes.headers["cookie"]);
     res.set("x-client-data", proxyRes.headers["x-client-data"]);
     res.set("x-yt-proxy", "PROXY-ADVANCED");
-    res.set("Access-Control-Allow-Origin", `${config.host}, youtube.com`);
+    res.set("Access-Control-Allow-Origin", `${host}, youtube.com`);
 
 
     if (proxyContentType.startsWith("text/html")) {
@@ -66,10 +66,10 @@ function onProxyRes(proxyRes, req, res) {
     });
     proxyRes.on('end', (data) => {
 
-        console.log("proxy res:end", req.url, proxyRes.headers["content-length"]);
+        // console.log("proxy res:end", req.url, proxyRes.headers["content-length"]);
         if (proxyContentType.startsWith("text/html")
             && !req.url.includes("/yts/")) {
-            console.log("inject in: ", req.url);
+            // console.log("inject in: ", req.url);
             // setTimeout(() => res.end(`<script src="${config.host}/scripts/yt-injection.js" ></script>`), 100);
             setTimeout(() => res.end(), 1000);
         } else
@@ -82,8 +82,8 @@ const htmlInjectFile = fs.readFileSync(`./client/yt-inject.html`, {encoding: "ut
 const cssInjectFile = fs.readFileSync(`./client/static/styles/yt-inject.css`, {encoding: "utf8"});
 
 function injectCustomCodeIntoMain(res) {
-    console.log("inecting: ", htmlInjectFile);
-    res.write(`<script src="${config.host}/static/scripts/yt-injection.js"></script>`);
+    // console.log("inecting: ", htmlInjectFile);
+    res.write(`<script src="${hostProxy}/static/scripts/yt-injection.js"></script>`);
     res.write(htmlInjectFile);
     res.write(`<style>${cssInjectFile}</style>`);
 
@@ -93,12 +93,13 @@ function processResponseData(data) {
     const dataStr = data.toString("utf8");
     return dataStr
         .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
-        // .replace("</body>", `${htmlInjectFile}<style>${cssInjectFile}</style></body>`)
+        .replace(`src=\"blob:http://localhost:3002/`, `src=\"blob:https://www.youtube.com/`)
+        // .replace(`https://www.youtube.com/get_midroll_info`, `https://www.youtube.com/get_midroll_infoXDXDXD`);
 }
 
 // issues:
 /* https://www.youtube.com/signin_passive x-frame-options
 * */
-
+// Wait until
 
 module.exports = ytProxy;

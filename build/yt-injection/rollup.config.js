@@ -2,6 +2,7 @@ import nodeResolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import pkg from "../../package.json";
 
+const externalDeps = []; //Object.keys(pkg.dependencies);
 export default {
     input: "index.js",
     output: {
@@ -10,15 +11,16 @@ export default {
         name: "yt-injection",
         exports: "named",
     },
-    external: ["util", ...Object.keys(pkg.dependencies)],
+    external: externalDeps,
     plugins: [
         nodeResolve({
-            name: "logger",
             jsnext: false,
             main: false,
-            modulesOnly: true
+            jail: "../../node_modules/",
         }),
-        commonjs({})
+        commonjs({
+            include: ["../../node_modules/**", "./io.events.js"]
+        })
         // babel({
         //   exclude: 'node_modules/**' // only transpile our source code
         // })

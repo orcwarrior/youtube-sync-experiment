@@ -6,5 +6,6 @@ const config = {
 
 module.exports = {
     ...config,
-    host: process.env.HOST || `http://localhost:${config.port}`
+    host: process.env.HOST || `http://localhost:${config.port}`,
+    hostProxy: process.env.HOST_PROXY || `http://localhost:${config.proxyPort}`
 };

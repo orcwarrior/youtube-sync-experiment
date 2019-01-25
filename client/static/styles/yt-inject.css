@@ -1,17 +1,107 @@
 #yt-injection-scope {
   position: relative;
-  height: 100px;
+  height: auto;
   pointer-events: none;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 20;
+  z-index: 5000;
 }
 #yt-injection-scope .overlay-wrapper {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
   position: absolute;
+  width: 100%;
+  padding: 16px 4px;
+}
+#yt-injection-scope .overlay-wrapper input, #yt-injection-scope .overlay-wrapper button {
+  height: 32px;
+  border-radius: 4px;
+  box-shadow: 0px 0px 12px #333;
+  border: none;
+  font-weight: bolder;
+  background: #eee;
+}
+#yt-injection-scope .overlay-wrapper .btn {
+  cursor: hand;
+}
+#yt-injection-scope .overlay-wrapper #sync-ms-offset {
+  width: 50px;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu {
+  display: block;
+  padding: 0px 8px;
+  opacity: 0;
+  flex-grow: 1;
+  pointer-events: none;
+  transition: all 200ms;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu.opened {
+  opacity: 1;
+  pointer-events: all;
+  transition: all 200ms;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form {
+  font-size: 11px;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form label, #yt-injection-scope .overlay-wrapper > .sync-menu #sync-form input {
+  text-decoration: small-caps;
+}
+#yt-injection-scope .overlay-wrapper button.sync-button {
+  display: inline-flex;
+  margin-right: 8px;
   width: auto;
-  opacity: 0.6;
+  pointer-events: all;
+  opacity: 0.9;
+}
+#yt-injection-scope .overlay-wrapper button.sync-button .cog {
+  margin-left: 8px;
+  transform: rotate(0deg);
+  transition: transform 200ms;
+  transform-origin: center center;
+}
+#yt-injection-scope .overlay-wrapper button.sync-button.opened > .cog {
+  transform: rotate(90deg);
+  transition: transform 200ms;
+}
+#yt-injection-scope .overlay-wrapper button.sync-button:hover {
+  opacity: 1;
+  background: #fff;
+  box-shadow: 0px 0px 5px #111;
+  transition: all 200ms ease-out;
+}
+#yt-injection-scope .overlay-wrapper #sync-status-dot {
+  display: inline-flex;
+  margin: 10px 10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #555;
+  box-shadow: 0px 0px 2px #111;
+  transition: background 1000ms;
+}
+#yt-injection-scope .overlay-wrapper #sync-status-dot.sended {
+  background: #8bff50;
+  transition: background 30ms;
+}
+#yt-injection-scope .overlay-wrapper #sync-status-dot.received {
+  background: #437aff;
+  transition: background 30ms;
+}
+
+#ticker {
+  display: none !important;
+}
+
+#ticker-content {
+  display: none !important;
+}
+
+#yt-lang-alert-container {
+  display: none !important;
 }
 
 /*# sourceMappingURL=yt-inject.css.map */

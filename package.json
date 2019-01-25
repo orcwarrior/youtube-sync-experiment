@@ -18,6 +18,7 @@
   "author": "Dariusz Kobuszewski",
   "license": "ISC",
   "dependencies": {
+    "event-emitter-es6": "^1.1.5",
     "express": "^4.16.4",
     "harmon": "^1.4.3",
     "http-proxy": "^1.17.0",
@@ -25,10 +26,12 @@
     "rollup": "^1.1.1",
     "socket-ntp": "^0.1.0",
     "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.2.0",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "rollup-plugin-commonjs": "^9.2.0",
-    "rollup-plugin-node-resolve": "^4.0.0"
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-npm": "^2.0.0"
   }
 }

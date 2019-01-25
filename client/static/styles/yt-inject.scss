@@ -1,15 +1,97 @@
 #yt-injection-scope {
   position: relative;
-  height: 100px;
+  height: auto;
   pointer-events: none;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 20;
+  z-index: 5000;
   .overlay-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
     position: absolute;
-    width: auto;
-    opacity: 0.6;
+    width: 100%;
+    padding: 16px 4px;
+    input, button {
+      height: 32px;
+      border-radius: 4px;
+      box-shadow: 0px 0px 12px #333;
+      border: none;
+      font-weight: bolder;
+      background: #eee;
+    }
+    .btn {cursor: hand;};
+    #sync-ms-offset {width: 50px;};
+
+    & > .sync-menu {
+      display: block;
+      padding: 0px 8px;
+      opacity: 0;
+      flex-grow: 1;
+      pointer-events: none;
+      transition: all 200ms;
+      &.opened {
+        opacity: 1;
+        pointer-events: all;
+        transition: all 200ms;
+      }
+      #sync-form {
+        font-size: 11px;
+        label, input {
+          text-decoration: small-caps;
+        }
+      }
+    }
+    button.sync-button {
+      display: inline-flex;
+      //align-self: center;
+      margin-right: 8px;
+      width: auto;
+
+      pointer-events: all;
+      opacity: 0.9;
+      & .cog {
+        margin-left: 8px;
+        transform: rotate(0deg);
+        transition: transform 200ms;
+        transform-origin: center center;
+      }
+      &.opened > .cog {
+        transform: rotate(90deg);
+        transition: transform 200ms;
+      }
+      &:hover {
+        opacity: 1;
+        background: #fff;
+        box-shadow: 0px 0px 5px #111;
+        transition: all 200ms ease-out;
+      }
+    }
+    #sync-status-dot {
+      display: inline-flex;
+      margin: 10px 10px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #555;
+      //border: 1px #555 solid;
+      box-shadow: 0px 0px 2px #111;
+      transition: background 1000ms;
+      &.sended{
+        background: #8bff50;
+        transition: background 30ms;
+      }
+      &.received{
+        background: #437aff;
+        transition: background 30ms;
+      }
+
+    }
   }
 }
+
+
+@import "yt-disables.scss";
