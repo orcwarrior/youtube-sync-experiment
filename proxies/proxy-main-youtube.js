@@ -1,6 +1,6 @@
 const httpProxy = require('http-proxy');
 const https = require("https");
-const {host, hostProxy} = require("../config");
+const {host, publicHost, proxyPort} = require("../config");
 const fs = require("fs");
 
 const ytProxyOpt = {
