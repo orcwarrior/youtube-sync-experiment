@@ -35,7 +35,7 @@ function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset,
             console.log("myToIdealDiff:", myToIdealDiff);
             if (myToIdealDiff > (maxMsTolerance / 1000) || forceOffseting) {
                 console.log("Setting new offset!!!", idealYTOffsetNow, userOffsetMs);
-                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 1500, userOffsetMs);
+                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 1800, userOffsetMs);
             }
         }
     }
