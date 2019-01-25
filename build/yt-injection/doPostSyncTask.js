@@ -31,17 +31,17 @@ function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset,
             setCurrentTimeAhead(videoEl, idealYTOffsetNow, 5000, userOffsetMs);
             return false;
         } else {
-            const myToIdealDiff = Math.abs(idealYTOffsetNow + (userOffsetMs/1000) - videoEl.currentTime);
+            const myToIdealDiff = Math.abs(idealYTOffsetNow - videoEl.currentTime);
             console.log("myToIdealDiff:", myToIdealDiff);
             if (myToIdealDiff > (maxMsTolerance / 1000) || forceOffseting) {
                 console.log("Setting new offset!!!", idealYTOffsetNow, userOffsetMs);
-                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 500, userOffsetMs);
+                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 1500, userOffsetMs);
             }
         }
     }
 }
 
-function setCurrentTimeAhead(videoEl, targetTime, aheadMs = 500, userOffsetMs) {
+function setCurrentTimeAhead(videoEl, targetTime, aheadMs = 1500, userOffsetMs) {
     console.log("curTime(Ahead-pre): " + videoEl.currentTime);
     videoEl.pause();
     videoEl.currentTime = targetTime + (aheadMs / 1000) + (userOffsetMs / 1000);
