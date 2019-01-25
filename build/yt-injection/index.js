@@ -10,7 +10,7 @@ console.log("DK: Code injecton worked as should ;-)");
 
 window.orgLocation = window.location.href;
 window.orgLocationOrigin = window.location.origin;
-const fixedLocation = window.location.href.replace("http://localhost:3002", "https://www.youtube.com");
+const fixedLocation = window.location.href.replace(window.location.origin, "https://www.youtube.com");
 window.history.pushState('yt-correction', 'YouTube ', fixedLocation);
 setTimeout(() => window.history.pushState('yt-correction-2', 'YouTube ', orgLocation), 1800);
 
