@@ -17,7 +17,7 @@ function selectVideoPlaying(youtubeData, lastYoutubeData, sessionId) {
     return false;
 }
 
-const maxMsTolerance = 80;
+const maxMsTolerance = 200;
 
 function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset, youtubeData, userOffsetMs, forceOffseting}) {
     const videoEl = document.querySelector(".html5-main-video");
