@@ -1,6 +1,6 @@
 let videoChangedButUnsync;
 
-function doPostSyncTask(syncSession, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs = 0}) {
+function doPostSyncTask(syncSession, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs = 0, forceOffseting}) {
     // console.log("doPostSyncTask: ", sessionId, serverDate, youtubeData);
     const videoChanged = selectVideoPlaying(youtubeData, lastYoutubeData[0], sessionId);
     videoChangedButUnsync = videoChanged;
@@ -19,7 +19,7 @@ function selectVideoPlaying(youtubeData, lastYoutubeData, sessionId) {
 
 const maxMsTolerance = 200;
 
-function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset, youtubeData, userOffsetMs}) {
+function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset, youtubeData, userOffsetMs, forceOffseting}) {
     const videoEl = document.querySelector(".html5-main-video");
     if (videoEl) {
         const curDate = new Date();
@@ -33,9 +33,9 @@ function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset,
         } else {
             const myToIdealDiff = Math.abs(idealYTOffsetNow - videoEl.currentTime);
             console.log("myToIdealDiff:", myToIdealDiff);
-            if (myToIdealDiff > (maxMsTolerance / 1000)) {
+            if (myToIdealDiff > (maxMsTolerance / 1000) || forceOffseting) {
                 console.log("Setting new offset!!!", idealYTOffsetNow, userOffsetMs);
-                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 800, userOffsetMs);
+                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 900, userOffsetMs);
             }
         }
     }
@@ -43,14 +43,14 @@ function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset,
 
 function setCurrentTimeAhead(videoEl, targetTime, aheadMs = 500, userOffsetMs) {
     console.log("curTime(Ahead-pre): " + videoEl.currentTime);
+    videoEl.pause();
     videoEl.currentTime = targetTime + (aheadMs / 1000) + (userOffsetMs / 1000);
-    setTimeout(() => videoEl.pause(), 100);
 
     console.log("curTime(Ahead): ", `${targetTime} + ${aheadMs / 1000} + ${(userOffsetMs / 1000)} = ${videoEl.currentTime}`)
     setTimeout(() => {
         videoEl.play();
         console.log("curTime(Ahead-start): " + videoEl.currentTime);
-    }, aheadMs - 100);
+    }, aheadMs);
 }
 
 export default doPostSyncTask;

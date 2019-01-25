@@ -10,7 +10,7 @@ const syncTypeEnum = {
 };
 
 const generateSessionId = () => uuid().split("-")[0];
-const syncIntervalMs = 5000;
+const syncIntervalMs = 3000;
 
 function extractUrlSyncId() {
     const {search} = window.location;
@@ -94,7 +94,11 @@ class SyncSession extends EventEmitter {
         this.emit("sync");
         const {lastYoutubeData, userOffsetMs, syncOffset} = this;
         console.log("receiveSyncMsg!", youtubeData);
-        doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs});
+
+        const forceOffseting = (userOffsetMs !== this._lastOffsetMs);
+        if (forceOffseting) console.warn("Video offseting will be forced this time");
+        doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs, forceOffseting});
+        this._lastOffsetMs = userOffsetMs;
         this.lastYoutubeData = [youtubeData, ...lastYoutubeData].slice(0, 10);
     }
 
