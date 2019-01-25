@@ -81,15 +81,18 @@
   border-radius: 50%;
   background: #555;
   box-shadow: 0px 0px 2px #111;
-  transition: background 1000ms;
+  transition: background 2000ms;
+  transition-delay: 300ms;
 }
 #yt-injection-scope .overlay-wrapper #sync-status-dot.sended {
   background: #8bff50;
   transition: background 30ms;
+  transition-delay: 0ms;
 }
 #yt-injection-scope .overlay-wrapper #sync-status-dot.received {
   background: #437aff;
   transition: background 30ms;
+  transition-delay: 0ms;
 }
 
 #ticker {
