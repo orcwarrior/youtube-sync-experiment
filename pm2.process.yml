@@ -5,3 +5,4 @@ apps:
   env    :
     NODE_ENV: production
     PROXY_PORT: 443
+    PUBLIC_IP: 217.182.79.24

@@ -83,7 +83,8 @@ const cssInjectFile = fs.readFileSync(`./client/static/styles/yt-inject.css`, {e
 
 function injectCustomCodeIntoMain(res) {
     // console.log("inecting: ", htmlInjectFile);
-    res.write(`<script src="${hostProxy}/static/scripts/yt-injection.js"></script>`);
+    const hostOrigin = `${publicHost}:${proxyPort}`;
+    res.write(`<script src="${hostOrigin}/static/scripts/yt-injection.js"></script>`);
     res.write(htmlInjectFile);
     res.write(`<style>${cssInjectFile}</style>`);
 
