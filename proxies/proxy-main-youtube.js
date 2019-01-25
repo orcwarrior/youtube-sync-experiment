@@ -79,12 +79,14 @@ function onProxyRes(proxyRes, req, res) {
 }
 
 const htmlInjectFile = fs.readFileSync(`./client/yt-inject.html`, {encoding: "utf8"});
+const jsInjectFile = fs.readFileSync(`./client/static/scripts/yt-injection.js`, {encoding: "utf8"});
 const cssInjectFile = fs.readFileSync(`./client/static/styles/yt-inject.css`, {encoding: "utf8"});
 
 function injectCustomCodeIntoMain(res) {
     // console.log("inecting: ", htmlInjectFile);
     const hostOrigin = `${publicHost}:${proxyPort}`;
-    res.write(`<script src="${hostOrigin}/static/scripts/yt-injection.js"></script>`);
+    // res.write(`<script src="${hostOrigin}/static/scripts/yt-injection.js"></script>`);
+    res.write(`<script>${jsInjectFile}</script>`);
     res.write(htmlInjectFile);
     res.write(`<style>${cssInjectFile}</style>`);
 
