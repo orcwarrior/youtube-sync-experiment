@@ -2,13 +2,14 @@ const httpProxy = require('http-proxy');
 const https = require("https");
 const {host, publicHost, proxyPort} = require("../config");
 const fs = require("fs");
+const keepAliveAgent = new https.Agent({keepAlive: true});
 
 const ytProxyOpt = {
     target: "https://www.youtube.com/",
     changeOrigin: true,
     followRedirects: true,
     hostRewrite: true,
-    // agent: https.globalAgent,
+    agent: keepAliveAgent,
     // headers: {
     //     host: "youtube.com",
     //     accept: "*",
@@ -35,7 +36,7 @@ const ytProxy = httpProxy.createProxyServer(ytProxyOpt);
 ytProxy.on("proxyRes", onProxyRes);
 ytProxy.on("error", (err, req, res) => {
     console.error(err);
-    res.end(err)
+    res.end(JSON.stringify(err))
 });
 ytProxy.on('proxyReq', function (proxyReq, req, res, options) {
     proxyReq.setHeader('accept-language', req.headers["accept-language"]);
@@ -58,11 +59,13 @@ function onProxyRes(proxyRes, req, res) {
     res.set("Access-Control-Allow-Origin", `${host}, youtube.com`);
 
 
-    if (proxyContentType.startsWith("text/html")) {
+    if (proxyContentType.startsWith("text/html") &&
+        (req.path.startsWith("/watch") || req.path === "/")) {
+        console.log("Inject custom script into main!");
         injectCustomCodeIntoMain(res);
     }
     proxyRes.on('data', (data) => {
-        res.write(processResponseData(data));
+        res.write(processResponseData(data, req));
     });
     proxyRes.on('end', (data) => {
 
@@ -89,15 +92,44 @@ function injectCustomCodeIntoMain(res) {
     res.write(`<script>${jsInjectFile}</script>`);
     res.write(htmlInjectFile);
     res.write(`<style>${cssInjectFile}</style>`);
-
 }
 
-function processResponseData(data) {
-    const dataStr = data.toString("utf8");
-    return dataStr
-        .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
-        .replace(`src=\"blob:http://localhost:3002/`, `src=\"blob:https://www.youtube.com/`)
-        // .replace(`https://www.youtube.com/get_midroll_info`, `https://www.youtube.com/get_midroll_infoXDXDXD`);
+//       , Dea = /^((http(s)?):)?\/\/((((lh[3-6](-tt|-d[a-g,z])?\.((ggpht)|(googleusercontent)|(google)))|(([1-4]\.bp\.blogspot)|(bp[0-3]\.blogger))|((((cp|ci|gp)[3-6])|(ap[1-2]))\.(ggpht|googleusercontent))|(gm[1-4]\.ggpht)|(((yt[3-4])|(sp[1-3]))\.(ggpht|googleusercontent)))\.com)|(dp[3-6]\.googleusercontent\.cn)|(dp4\.googleusercontent\.com)|(photos\-image\-(dev|qa)(-auth)?\.corp\.google\.com)|((dev|dev2|dev3|qa|qa2|qa3|qa-red|qa-blue|canary)[-.]lighthouse\.sandbox\.google\.com\/image)|(image\-(dev|qa)\-lighthouse(-auth)?\.sandbox\.google\.com(\/image)?))\/|^https?:\/\/(([A-Za-z0-9-]{1,63}\.)*(corp\.google\.com|c\.googlers\.com|borg\.google\.com|docs\.google\.com|drive\.google\.com|googleplex\.com|googlevideo\.com|play\.google\.com|prod\.google\.com|lh3\.photos\.google\.com|plus\.google\.com|mail\.google\.com|youtube\.com|xfx7\.com|yt\.akamaized\.net|chat\.google\.com)(:[0-9]+)?\/|([A-Za-z0-9-]{1,63}\.)*(sandbox\.google\.com)(:[0-9]+)?\/(?!url\b)|([A-Za-z0-9-]{1,63}\.)*c\.lh3(-d[a-gz])?\.(googleusercontent|photos\.google)\.com\/.*$)/
+function processResponseData(data, {path}) {
+    // console.warn("path: ", path);
+    if (path.startsWith("/watch") || path === "/") return processMainHTMLFiles(data);
+    else if (path.endsWith("base.js")) return processBaseJSFile(data)
+    else return data;
+
+
+    function processMainHTMLFiles(data) {
+        const dataStr = data.toString("utf8");
+        return dataStr
+        // {\"url\":\"\/\/www.youtube.com\/get_end
+        // .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
+        //     .replace("youtube.com", "localhost:3002")
+            .replace("https://www.youtube.com", "http://localhost:3002")
+            .replace("https:\\/\\/www.youtube.com", "http:\\/\\/localhost:3002")
+            // .replace("youtube.com", "localhost:3002")
+            // .replace(`src=\"blob:http://localhost:3002/`, `src=\"blob:https://www.youtube.com/`)
+            .replace(/https:\/\/(.+)\.googlevideo\.com\//gi, `http://localhost:3002/g-vid-proxy/\$1/`)
+            .replace("https:\\/\\/s.ytimg.com\\/yts\\/htmlbin\\/desktop_polymer_sel_auto_svg_watch", "http:\\/\\/localhost:3002\\/yts\\/htmlbin\\/desktop_polymer_sel_auto_svg_watch")
+            .replace(/https:\\\/\\\/(.+)\.googlevideo\.com\//gi, `http:\\/\\/localhost:3002/g-vid-proxy/\$1/`)
+            .replace(/https%3A%2F%2F(.+)\.googlevideo\.com%2F/gi, `http%3A%2F%2Flocalhost%3A3002%2Fg-vid-proxy%2F\$1%2F`)
+        //https:\/\/r3---sn-hxugv2vgu-ajwe.googlevideo.com\/videoplaybac
+    }
+
+    function processBaseJSFile(data) {
+        const secureYTUrlRegex = "/^((http(s)?):)?\\/\\/((((lh[3-6](-tt|-d[a-g,z])?\\.((ggpht)|(googleusercontent)|(google)))|(([1-4]\\.bp\\.blogspot)|(bp[0-3]\\.";
+        // console.warn("processing base.js file!!!");
+        const dataStr = data.toString("utf8");
+        return dataStr
+            .replace(secureYTUrlRegex, `/.*/; __DK__disabledRgx = /${secureYTUrlRegex}`)
+            .replace(/\/\^https\?/g, "/.*/; __DK3__disabledRgx = /^https?")
+            // .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
+            // .replace("/^https?:\\/\\/", "/.*/; __DK2__disabledRgx = /^https?:\\/\\/")
+            .replace("En=function(a,b){", "En = function(a, b) { console.log('en.fn: ', a, b); ");
+    }
 }
 
 // issues:
