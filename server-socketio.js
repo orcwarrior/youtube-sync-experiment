@@ -3,10 +3,10 @@ const {syncSession} = require("./build/yt-injection/io.events");
 
 let channelsSecrets = {};
 
-module.exports = function initializeIO(expressApp, port = port) {
+module.exports = function initializeIO(expressApp) {
 
-    const http = require("http").Server(expressApp);
-    const io = require('socket.io')(http);
+    const httpServer = require("http").Server(expressApp);
+    const io = require('socket.io')(httpServer);
     const ntp = require("socket-ntp");
 
     io.on('connection', function (socket) {
@@ -46,7 +46,5 @@ module.exports = function initializeIO(expressApp, port = port) {
             io.to(sessionId).emit(syncSession.sync, {sessionId, date, serverDate, youtubeData});
         });
     });
-    http.listen(port, function () {
-        console.log('io listening on: ' + port);
-    });
+    return httpServer;
 };
