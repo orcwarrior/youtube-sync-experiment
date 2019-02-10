@@ -338,7 +338,7 @@ var io_events_1 = io_events.syncSession;
 
 let videoChangedButUnsync;
 
-function doPostSyncTask(syncSession, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs = 0}) {
+function doPostSyncTask(syncSession, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs = 0, forceOffseting}) {
     // console.log("doPostSyncTask: ", sessionId, serverDate, youtubeData);
     const videoChanged = selectVideoPlaying(youtubeData, lastYoutubeData[0], sessionId);
     videoChangedButUnsync = videoChanged;
@@ -355,9 +355,9 @@ function selectVideoPlaying(youtubeData, lastYoutubeData, sessionId) {
     return false;
 }
 
-const maxMsTolerance = 200;
+const maxMsTolerance = 80;
 
-function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset, youtubeData, userOffsetMs}) {
+function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset, youtubeData, userOffsetMs, forceOffseting}) {
     const videoEl = document.querySelector(".html5-main-video");
     if (videoEl) {
         const curDate = new Date();
@@ -371,24 +371,24 @@ function synchronizeVideoPlaying({videoChangedButUnsync, serverDate, syncOffset,
         } else {
             const myToIdealDiff = Math.abs(idealYTOffsetNow - videoEl.currentTime);
             console.log("myToIdealDiff:", myToIdealDiff);
-            if (myToIdealDiff > (maxMsTolerance / 1000)) {
+            if (myToIdealDiff > (maxMsTolerance / 1000) || forceOffseting) {
                 console.log("Setting new offset!!!", idealYTOffsetNow, userOffsetMs);
-                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 800, userOffsetMs);
+                setCurrentTimeAhead(videoEl, idealYTOffsetNow, 1800, userOffsetMs);
             }
         }
     }
 }
 
-function setCurrentTimeAhead(videoEl, targetTime, aheadMs = 500, userOffsetMs) {
+function setCurrentTimeAhead(videoEl, targetTime, aheadMs = 1500, userOffsetMs) {
     console.log("curTime(Ahead-pre): " + videoEl.currentTime);
+    videoEl.pause();
     videoEl.currentTime = targetTime + (aheadMs / 1000) + (userOffsetMs / 1000);
-    setTimeout(() => videoEl.pause(), 100);
 
     console.log("curTime(Ahead): ", `${targetTime} + ${aheadMs / 1000} + ${(userOffsetMs / 1000)} = ${videoEl.currentTime}`);
     setTimeout(() => {
         videoEl.play();
         console.log("curTime(Ahead-start): " + videoEl.currentTime);
-    }, aheadMs - 100);
+    }, aheadMs);
 }
 
 const syncTypeEnum = {
@@ -397,7 +397,7 @@ const syncTypeEnum = {
 };
 
 const generateSessionId = () => uuidv4().split("-")[0];
-const syncIntervalMs = 5000;
+const syncIntervalMs = 3000;
 
 function extractUrlSyncId() {
     const {search} = window.location;
@@ -481,7 +481,14 @@ class SyncSession extends eventEmitterEs6 {
         this.emit("sync");
         const {lastYoutubeData, userOffsetMs, syncOffset} = this;
         console.log("receiveSyncMsg!", youtubeData);
-        doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs});
+
+        const forceOffseting = (userOffsetMs !== this._lastOffsetMs);
+        if (forceOffseting)  {
+            console.warn("Video offseting will be forced this time");
+            this.serializeLS();
+        }
+        doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs, forceOffseting});
+        this._lastOffsetMs = userOffsetMs;
         this.lastYoutubeData = [youtubeData, ...lastYoutubeData].slice(0, 10);
     }
 
@@ -545,19 +552,19 @@ console.log("DK: Code injecton worked as should ;-)");
 
 window.orgLocation = window.location.href;
 window.orgLocationOrigin = window.location.origin;
-const fixedLocation = window.location.href.replace(window.location.origin, "https://www.youtube.com");
-window.history.pushState('yt-correction', 'YouTube ', fixedLocation);
-setTimeout(() => window.history.pushState('yt-correction-2', 'YouTube ', orgLocation), 1800);
+const fixedLocation = window.location.href.replace(window.location.origin, "https://youtube.com");
+// window.history.pushState('yt-correction', 'YouTube ', fixedLocation);
+// setTimeout(() => window.history.pushState('yt-correction-2', 'YouTube ', orgLocation), 300);
 
 console.log("Corrected location: ", window.location.href);
 window.g = window;
 
-document.addEventListener("keyup", (evt) => {
-    if (evt.code === "83") {
-        alert("S Clicked!");
-    }
-    console.log("key clicked");
-});
+// document.addEventListener("keyup", (evt) => {
+//     if (evt.code === "83") {
+//         alert("S Clicked!")
+//     }
+//     console.log("key clicked");
+// });
 document.addEventListener("DOMContentLoaded", () => {
     setInterval(correctYTVideoUrl, 200);
     window.history.pushState('yt-correction-2', 'YouTube ', orgLocation);

@@ -10,20 +10,20 @@ console.log("DK: Code injecton worked as should ;-)");
 
 window.orgLocation = window.location.href;
 window.orgLocationOrigin = window.location.origin;
-const fixedLocation = window.location.href.replace(window.location.origin, "https://www.youtube.com");
-window.history.pushState('yt-correction', 'YouTube ', fixedLocation);
-setTimeout(() => window.history.pushState('yt-correction-2', 'YouTube ', orgLocation), 1800);
+const fixedLocation = window.location.href.replace(window.location.origin, "https://youtube.com");
+// window.history.pushState('yt-correction', 'YouTube ', fixedLocation);
+// setTimeout(() => window.history.pushState('yt-correction-2', 'YouTube ', orgLocation), 300);
 
 console.log("Corrected location: ", window.location.href);
 let printedVidOnce;
 window.g = window;
 
-document.addEventListener("keyup", (evt) => {
-    if (evt.code === "83") {
-        alert("S Clicked!")
-    }
-    console.log("key clicked");
-});
+// document.addEventListener("keyup", (evt) => {
+//     if (evt.code === "83") {
+//         alert("S Clicked!")
+//     }
+//     console.log("key clicked");
+// });
 document.addEventListener("DOMContentLoaded", () => {
     correctYTVideoUrl();
     setInterval(correctYTVideoUrl, 200);
