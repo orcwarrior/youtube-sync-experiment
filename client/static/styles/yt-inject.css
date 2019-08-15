@@ -9,21 +9,35 @@
   z-index: 5000;
 }
 #yt-injection-scope .overlay-wrapper {
+  position: fixed;
+  top: 2px;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   justify-content: center;
-  position: absolute;
   width: 100%;
   padding: 16px 4px;
 }
-#yt-injection-scope .overlay-wrapper input, #yt-injection-scope .overlay-wrapper button {
+#yt-injection-scope .overlay-wrapper input, #yt-injection-scope .overlay-wrapper button, #yt-injection-scope .overlay-wrapper .div-btn {
   height: 32px;
   border-radius: 4px;
   box-shadow: 0px 0px 12px #333;
   border: none;
   font-weight: bolder;
   background: #eee;
+  pointer-events: all;
+}
+#yt-injection-scope .overlay-wrapper .div-btn {
+  box-shadow: 0px 0px 12px #333;
+  border: 2px solid transparent;
+  transition: all 1s ease-in-out;
+  border-radius: 5px;
+}
+#yt-injection-scope .overlay-wrapper .div-btn:active {
+  background: #fff !important;
+  border: 2px solid #77a2ee !important;
+  box-shadow: 0px 0px 12px #77a2ee !important;
+  transition: all 10ms ease-in-out !important;
 }
 #yt-injection-scope .overlay-wrapper .btn {
   cursor: hand;
@@ -41,37 +55,92 @@
 }
 #yt-injection-scope .overlay-wrapper > .sync-menu.opened {
   opacity: 1;
-  pointer-events: all;
   transition: all 200ms;
 }
+#yt-injection-scope .overlay-wrapper > .sync-menu.opened #sync-form {
+  pointer-events: all;
+}
 #yt-injection-scope .overlay-wrapper > .sync-menu #sync-form {
+  display: inline-block;
   font-size: 11px;
 }
 #yt-injection-scope .overlay-wrapper > .sync-menu #sync-form label, #yt-injection-scope .overlay-wrapper > .sync-menu #sync-form input {
   text-decoration: small-caps;
 }
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form #sync-share {
+  position: relative;
+  display: inline-block;
+  padding: 4px;
+  background: #eee;
+  height: 20px;
+  top: 6px;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form #sync-share:before {
+  display: block;
+  width: 20px;
+  height: 20px;
+  content: url("https://upload.wikimedia.org/wikipedia/commons/2/25/Twemoji_1f517.svg");
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form #sync-share:after {
+  position: absolute;
+  left: -70px;
+  padding: 4px;
+  border-radius: 2px;
+  margin-top: 1em;
+  display: block;
+  content: "share url copied!";
+  opacity: 0;
+  transition: opacity 200ms;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form #sync-share.copied {
+  background: #8bff50;
+}
+#yt-injection-scope .overlay-wrapper > .sync-menu #sync-form #sync-share.copied:after {
+  position: absolute;
+  left: -70px;
+  padding: 4px;
+  border-radius: 2px;
+  margin-top: 1em;
+  display: block;
+  content: "share url copied!";
+  background: #eee;
+  box-shadow: 0px 0px 12px #333;
+  opacity: 1;
+  transition: opacity 200ms;
+}
 #yt-injection-scope .overlay-wrapper button.sync-button {
   display: inline-flex;
   margin-right: 8px;
   width: auto;
-  pointer-events: all;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
   opacity: 0.9;
+  font-size: 12px;
+  text-transform: uppercase;
 }
 #yt-injection-scope .overlay-wrapper button.sync-button .cog {
+  background: url("https://upload.wikimedia.org/wikipedia/commons/9/92/Cog_font_awesome.svg");
+  width: 20px;
+  height: 20px;
   margin-left: 8px;
   transform: rotate(0deg);
-  transition: transform 200ms;
-  transform-origin: center center;
+  transition: transform 200ms ease-in-out;
+  transform-origin: center;
+  opacity: 0.9;
 }
 #yt-injection-scope .overlay-wrapper button.sync-button.opened > .cog {
-  transform: rotate(90deg);
-  transition: transform 200ms;
+  transform: rotate(270deg);
+  transition: transform 200ms ease-in-out;
 }
 #yt-injection-scope .overlay-wrapper button.sync-button:hover {
   opacity: 1;
   background: #fff;
   box-shadow: 0px 0px 5px #111;
   transition: all 200ms ease-out;
+}
+#yt-injection-scope .overlay-wrapper button.sync-button:hover .cog {
+  opacity: 1;
 }
 #yt-injection-scope .overlay-wrapper #sync-status-dot {
   display: inline-flex;
@@ -95,6 +164,18 @@
   transition-delay: 0ms;
 }
 
+#logo #logo-icon-container.ytd-topbar-logo-renderer:before {
+  position: absolute;
+  top: 6px;
+  left: -6px;
+  transform: rotate(-30deg);
+  font-size: 14px;
+  opacity: 0.8;
+  display: block;
+  font-weight: bold;
+  content: "SYNC";
+}
+
 #ticker {
   display: none !important;
 }
@@ -105,6 +186,11 @@
 
 #yt-lang-alert-container {
   display: none !important;
+}
+
+/* DK: No mobile bloating mealbars*/
+div[id^=mealbar] {
+  display: none;
 }
 
 /*# sourceMappingURL=yt-inject.css.map */

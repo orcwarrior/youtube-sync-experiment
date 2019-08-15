@@ -39,10 +39,14 @@ ytProxy.on("error", (err, req, res) => {
     res.end(JSON.stringify(err))
 });
 ytProxy.on('proxyReq', function (proxyReq, req, res, options) {
-    proxyReq.setHeader('accept-language', req.headers["accept-language"]);
-    proxyReq.setHeader('accept-encoding', "identity");
-    proxyReq.setHeader('Referer', "youtube.com");
-    proxyReq.setHeader('User-Agent', req.headers["user-agent"]);
+    try {
+        proxyReq.setHeader('accept-language', req.headers["accept-language"]);
+        proxyReq.setHeader('accept-encoding', "identity");
+        proxyReq.setHeader('Referer', "youtube.com");
+        proxyReq.setHeader('User-Agent', req.headers["user-agent"]);
+    } catch (err) {
+        console.error("You probably tried to set headers after they're sent, lets see...", err);
+    }
 });
 
 function onProxyRes(proxyRes, req, res) {
@@ -81,6 +85,8 @@ function onProxyRes(proxyRes, req, res) {
     });
 }
 
+//TODO: DK: change all localhost:3002 to config host & config port !!!
+
 const htmlInjectFile = fs.readFileSync(`./client/yt-inject.html`, {encoding: "utf8"});
 const jsInjectFile = fs.readFileSync(`./client/static/scripts/yt-injection.js`, {encoding: "utf8"});
 const cssInjectFile = fs.readFileSync(`./client/static/styles/yt-inject.css`, {encoding: "utf8"});
@@ -89,34 +95,60 @@ function injectCustomCodeIntoMain(res) {
     // console.log("inecting: ", htmlInjectFile);
     const hostOrigin = `${publicHost}:${proxyPort}`;
     // res.write(`<script src="${hostOrigin}/static/scripts/yt-injection.js"></script>`);
-    res.write(`<script>${jsInjectFile}</script>`);
     res.write(htmlInjectFile);
+    res.write(`<script>${jsInjectFile}</script>`);
     res.write(`<style>${cssInjectFile}</style>`);
 }
 
-//       , Dea = /^((http(s)?):)?\/\/((((lh[3-6](-tt|-d[a-g,z])?\.((ggpht)|(googleusercontent)|(google)))|(([1-4]\.bp\.blogspot)|(bp[0-3]\.blogger))|((((cp|ci|gp)[3-6])|(ap[1-2]))\.(ggpht|googleusercontent))|(gm[1-4]\.ggpht)|(((yt[3-4])|(sp[1-3]))\.(ggpht|googleusercontent)))\.com)|(dp[3-6]\.googleusercontent\.cn)|(dp4\.googleusercontent\.com)|(photos\-image\-(dev|qa)(-auth)?\.corp\.google\.com)|((dev|dev2|dev3|qa|qa2|qa3|qa-red|qa-blue|canary)[-.]lighthouse\.sandbox\.google\.com\/image)|(image\-(dev|qa)\-lighthouse(-auth)?\.sandbox\.google\.com(\/image)?))\/|^https?:\/\/(([A-Za-z0-9-]{1,63}\.)*(corp\.google\.com|c\.googlers\.com|borg\.google\.com|docs\.google\.com|drive\.google\.com|googleplex\.com|googlevideo\.com|play\.google\.com|prod\.google\.com|lh3\.photos\.google\.com|plus\.google\.com|mail\.google\.com|youtube\.com|xfx7\.com|yt\.akamaized\.net|chat\.google\.com)(:[0-9]+)?\/|([A-Za-z0-9-]{1,63}\.)*(sandbox\.google\.com)(:[0-9]+)?\/(?!url\b)|([A-Za-z0-9-]{1,63}\.)*c\.lh3(-d[a-gz])?\.(googleusercontent|photos\.google)\.com\/.*$)/
-function processResponseData(data, {path}) {
-    // console.warn("path: ", path);
-    if (path.startsWith("/watch") || path === "/") return processMainHTMLFiles(data);
+// Dea = /^((http(s)?):)?\/\/((((lh[3-6](-tt|-d[a-g,z])?\.((ggpht)|(googleusercontent)|(google)))|(([1-4]\.bp\.blogspot)|(bp[0-3]\.blogger))|((((cp|ci|gp)[3-6])|(ap[1-2]))\.(ggpht|googleusercontent))|(gm[1-4]\.ggpht)|(((yt[3-4])|(sp[1-3]))\.(ggpht|googleusercontent)))\.com)|(dp[3-6]\.googleusercontent\.cn)|(dp4\.googleusercontent\.com)|(photos\-image\-(dev|qa)(-auth)?\.corp\.google\.com)|((dev|dev2|dev3|qa|qa2|qa3|qa-red|qa-blue|canary)[-.]lighthouse\.sandbox\.google\.com\/image)|(image\-(dev|qa)\-lighthouse(-auth)?\.sandbox\.google\.com(\/image)?))\/|^https?:\/\/(([A-Za-z0-9-]{1,63}\.)*(corp\.google\.com|c\.googlers\.com|borg\.google\.com|docs\.google\.com|drive\.google\.com|googleplex\.com|googlevideo\.com|play\.google\.com|prod\.google\.com|lh3\.photos\.google\.com|plus\.google\.com|mail\.google\.com|youtube\.com|xfx7\.com|yt\.akamaized\.net|chat\.google\.com)(:[0-9]+)?\/|([A-Za-z0-9-]{1,63}\.)*(sandbox\.google\.com)(:[0-9]+)?\/(?!url\b)|([A-Za-z0-9-]{1,63}\.)*c\.lh3(-d[a-gz])?\.(googleusercontent|photos\.google)\.com\/.*$)/
+function _replaceGoogleVideoToProxy(data) {
+    return data.replace(/https:\/\/(.+)\.googlevideo\.com\//gi, `http://localhost:3002/g-vid-proxy/\$1/`)
+        .replace(/https:\\\/\\\/(.+)\.googlevideo\.com\//gi, `http:\\/\\/localhost:3002/g-vid-proxy/\$1/`)
+        .replace(/https%3A%2F%2F(.+)\.googlevideo\.com%2F/gi, `http%3A%2F%2Flocalhost%3A3002%2Fgoogle-vid-proxy%2F\$1%2F`)
+}
+
+const throttle = (fn, ms) => {
+    let timeoutFn, nextCall = new Date().valueOf() + ms;
+
+    return function callThrottled(...args) {
+        const timestamp = new Date().valueOf();
+        const throttledCallAt = nextCall - timestamp;
+        if (throttledCallAt < 0) {
+            nextCall = new Date().valueOf() + ms;
+            return fn(...args);
+        }
+
+        clearTimeout(timeoutFn);
+        timeoutFn = setTimeout(() => {
+            nextCall = new Date().valueOf() + ms;
+            return fn(...args)
+        }, throttledCallAt);
+    }
+};
+const _throttle = {
+    log: throttle(console.log, 250)
+};
+
+function processResponseData(data, {path, query}) {
+    _throttle.log("response data of: ", path, query);
+    if (path.startsWith("/watch") || path === "/") return processMainHTMLFiles(data, {path, query});
     else if (path.endsWith("base.js")) return processBaseJSFile(data)
     else return data;
 
 
-    function processMainHTMLFiles(data) {
+    function processMainHTMLFiles(data, {path, query}) {
         const dataStr = data.toString("utf8");
+        // const gVideoProxy = _replaceGoogleVideoToProxy(dataStr);
         return dataStr
         // {\"url\":\"\/\/www.youtube.com\/get_end
         // .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
         //     .replace("youtube.com", "localhost:3002")
             .replace("https://www.youtube.com", "http://localhost:3002")
             .replace("https:\\/\\/www.youtube.com", "http:\\/\\/localhost:3002")
-            // .replace("youtube.com", "localhost:3002")
-            // .replace(`src=\"blob:http://localhost:3002/`, `src=\"blob:https://www.youtube.com/`)
+            .replace("https:\\/\\/s.ytimg.com\\/yts\\/htmlbin\\/desktop_polymer_sel", "http:\\/\\/localhost:3002\\/yts\\/htmlbin\\/desktop_polymer_sel")
             .replace(/https:\/\/(.+)\.googlevideo\.com\//gi, `http://localhost:3002/g-vid-proxy/\$1/`)
-            .replace("https:\\/\\/s.ytimg.com\\/yts\\/htmlbin\\/desktop_polymer_sel_auto_svg_watch", "http:\\/\\/localhost:3002\\/yts\\/htmlbin\\/desktop_polymer_sel_auto_svg_watch")
             .replace(/https:\\\/\\\/(.+)\.googlevideo\.com\//gi, `http:\\/\\/localhost:3002/g-vid-proxy/\$1/`)
             .replace(/https%3A%2F%2F(.+)\.googlevideo\.com%2F/gi, `http%3A%2F%2Flocalhost%3A3002%2Fg-vid-proxy%2F\$1%2F`)
-        //https:\/\/r3---sn-hxugv2vgu-ajwe.googlevideo.com\/videoplaybac
     }
 
     function processBaseJSFile(data) {
@@ -128,7 +160,8 @@ function processResponseData(data, {path}) {
             .replace(/\/\^https\?/g, "/.*/; __DK3__disabledRgx = /^https?")
             // .replace(new RegExp(`="/yts/`, "g"), "=\"https:\/\/www.youtube.com\/yts\/")
             // .replace("/^https?:\\/\\/", "/.*/; __DK2__disabledRgx = /^https?:\\/\\/")
-            .replace("En=function(a,b){", "En = function(a, b) { console.log('en.fn: ', a, b); ");
+            // .replace("En=function(a,b){", "En = function(a, b) { console.log('en.fn: ', a, b); ")
+            .replace(".startsWith(\"local\"))throw Error(\"Untrusted URL: \"+a.o);", ".startsWith(\"local\"))var _gibberish=\"heh-nothing\";");
     }
 }
 

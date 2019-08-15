@@ -399,27 +399,30 @@ const syncTypeEnum = {
 const generateSessionId = () => uuidv4().split("-")[0];
 const syncIntervalMs = 3000;
 
-function extractUrlSyncId() {
-    const {search} = window.location;
-    const searchParams = new URLSearchParams(search);
-    return searchParams.get("syncId");
-}
 
 class SyncSession extends eventEmitterEs6 {
     static getLSKey() {
         return "SyncSession";
     }
 
-    static deserializeLS() {
-        const sessionLS = localStorage.getItem(SyncSession.getLSKey());
-        if (sessionLS) {
-            const syncSession = JSON.parse(sessionLS);
-            const syncSessionObj = new SyncSession(syncSession.type, extractUrlSyncId() || syncSession.sessionId,
-                syncSession.id, syncSession.userOffsetMs);
-            syncSessionObj.serializeLS();
-            return syncSessionObj;
+    static clearLSSession() {
+        localStorage.removeItem(SyncSession.getLSKey());
+    }
 
-        } else return new SyncSession();
+    static hasLSSession() {
+        return !!localStorage.getItem(SyncSession.getLSKey());
+    }
+
+    static deserializeLS() {
+        if (!SyncSession.hasLSSession()) return;
+
+        const sessionLS = localStorage.getItem(SyncSession.getLSKey());
+        const syncSession = JSON.parse(sessionLS);
+        const syncSessionObj = new SyncSession(syncSession.type, syncSession.sessionId,
+            syncSession.id, syncSession.userOffsetMs);
+        syncSessionObj.serializeInLS();
+        return syncSessionObj;
+
     }
 
     constructor(syncType = syncTypeEnum.master, sessionId = generateSessionId(), id, userOffsetMs = 0) {
@@ -429,37 +432,68 @@ class SyncSession extends eventEmitterEs6 {
         this.id = id || uuidv4(); // id is secret -> it equality authenticate possibility to broadcast sync
         this.lastYoutubeData = [];
         this.userOffsetMs = userOffsetMs;
-        this.serializeLS();
+        this.serializeInLS();
 
         socket.emit(io_events_1.register, {id: this.id, type: syncType, sessionId}, this.receiveRegisterAck.bind(this));
 
         this.setupSyncSendOrReceive();
+        this.initNtpSyncHandler();
+        console.log("Sync Session created!", this);
+    }
 
+    initNtpSyncHandler() {
         socket.on("ntp:server_sync", () => {
             this.syncOffset = parseInt(-ntp.offset());
-            // console.log("ntp sync: ", this.syncOffset);
+            console.log("ntp sync: ", this.syncOffset);
         });
     }
+
     setupSyncSendOrReceive() {
-        if (this.syncInterval) clearInterval(this.syncInterval);
+        this.clearSocketListenersAndEmitters();
         if (this.type === syncTypeEnum.master) {
+            console.log("setupSyncSendOrReceive: setup new sync interval");
             this.syncInterval = setInterval(() => socket.emit(io_events_1.sync, this.generateSyncMsg()), syncIntervalMs);
         } else {
+            console.log("setupSyncSendOrReceive: setup as msg listener...");
             socket.on(io_events_1.sync, this.receiveSyncMsg.bind(this));
         }
     }
 
+    clearSocketListenersAndEmitters() {
+        if (this.syncInterval) {
+            console.log("setupSyncSendOrReceive: removing old sync inverval...");
+            clearInterval(this.syncInterval);
+        }
+        socket.removeAllListeners(io_events_1.sync);
+    }
+
     receiveRegisterAck(correctedType) {
+        console.log("receiveRegisterAck: ", correctedType, this.type);
         if (this.type !== correctedType) {
             this.type = correctedType;
-            this.setupSyncSendOrReceive();
-            this.serializeLS();
+            this.setupSyncSendOrReceive(); // this call means correcting listen or emit pick
+            this.serializeInLS();
         }
+    }
+
+    resetSessionId() {
+        this.sessionId = generateSessionId();
+        this.type = syncTypeEnum.master;
+        this.id = uuidv4();
+        this.lastYoutubeData = [];
+        console.log("resetSessionId...", this);
+        this.setupSyncSendOrReceive();
+        this.serializeInLS();
+        socket.emit(io_events_1.register, this, this.receiveRegisterAck.bind(this));
     }
 
     changeSessionId(newSessionId) {
         this.sessionId = newSessionId;
-        socket.emit(io_events_1.register, {id: this.id, type: this.type, sessionId: newSessionId}, this.receiveRegisterAck.bind(this));
+        socket.emit(io_events_1.register, {
+            id: this.id,
+            type: this.type,
+            sessionId: newSessionId
+        }, this.receiveRegisterAck.bind(this));
     }
 
     generateSyncMsg() {
@@ -471,7 +505,13 @@ class SyncSession extends eventEmitterEs6 {
         const {sessionId, id} = this;
         const curDate = new Date();
         const youtubeData = {url: `${pathname}${search}`, videoOffset: videoEl && videoEl.currentTime};
-        const syncMsg = {sessionId, id, date: curDate, serverDate: ((this.syncOffset||0) + curDate.valueOf()), youtubeData};
+        const syncMsg = {
+            sessionId,
+            id,
+            date: curDate,
+            serverDate: ((this.syncOffset || 0) + curDate.valueOf()),
+            youtubeData
+        };
         // TODO: Get youtube data (url + current ofsset + currentTime) => syncMsg
         console.log("Generate syncMsg: ", syncMsg);
         return syncMsg;
@@ -483,65 +523,147 @@ class SyncSession extends eventEmitterEs6 {
         console.log("receiveSyncMsg!", youtubeData);
 
         const forceOffseting = (userOffsetMs !== this._lastOffsetMs);
-        if (forceOffseting)  {
+        if (forceOffseting) {
             console.warn("Video offseting will be forced this time");
-            this.serializeLS();
+            this.serializeInLS();
         }
-        doPostSyncTask(this, {sessionId, syncOffset, serverDate, youtubeData, lastYoutubeData, userOffsetMs, forceOffseting});
+        doPostSyncTask(this, {
+            sessionId,
+            syncOffset,
+            serverDate,
+            youtubeData,
+            lastYoutubeData,
+            userOffsetMs,
+            forceOffseting
+        });
         this._lastOffsetMs = userOffsetMs;
         this.lastYoutubeData = [youtubeData, ...lastYoutubeData].slice(0, 10);
     }
 
-    serializeLS() {
+    serializeInLS() {
         localStorage.setItem(SyncSession.getLSKey(), JSON.stringify(this));
     }
 }
 
 let syncInstance = null;
+
+function extractUrlSyncId() {
+    const {search} = window.location;
+    const searchParams = new URLSearchParams(search);
+    return searchParams.get("syncId");
+}
+
 const initSyncSession = () => {
+    const querySyncSession = extractUrlSyncId();
+
     if (syncInstance) return syncInstance;
-    else syncInstance = SyncSession.deserializeLS();
+    else if (querySyncSession) syncInstance = new SyncSession(undefined, querySyncSession);
+    else if (SyncSession.hasLSSession()) syncInstance = SyncSession.deserializeLS();
+    else syncInstance = new SyncSession();
     return syncInstance;
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-    const injectionScope = document.querySelector("#yt-injection-scope");
+function fallbackCopyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
 
-    const syncMenuToggleEl = injectionScope.querySelector("#sync-menu-toggle");
-    const syncMenu = injectionScope.querySelector(".sync-menu");
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        console.log('Fallback: Copying text command was ' + msg);
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+    }
 
-    const syncSession = initSyncSession();
-
-    const syncFormJoinCreateEl = injectionScope.querySelector("#sync-join-create");
-    const sessionIdInput = injectionScope.querySelector("#sync-channel-id");
-    const sessionMsOffsetInput = injectionScope.querySelector("#sync-ms-offset");
-
-    syncMenuToggleEl.addEventListener("click", () => {
-        syncMenu.classList.toggle("opened");
-        syncMenuToggleEl.classList.toggle("opened");
+    document.body.removeChild(textArea);
+}
+function copyTextToClipboard(text) {
+    if (!navigator.clipboard) {
+        fallbackCopyTextToClipboard(text);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(function() {
+        console.log('Async: Copying to clipboard was successful!');
+    }, function(err) {
+        console.error('Async: Could not copy text: ', err);
     });
-    syncFormJoinCreateEl.addEventListener("click", (evt) => {
-        evt.preventDefault();
-        syncSession.changeSessionId(sessionIdInput.value);
-    });
-    sessionMsOffsetInput.addEventListener("input", () => {
-        syncSession.userOffsetMs = Number(sessionMsOffsetInput.value);
-    });
+}
 
-    function fillSyncData() {
-        sessionIdInput.value = syncSession.sessionId;
-    } fillSyncData();
+// document.addEventListener("DOMContentLoaded", () => {
+const injectionScope = document.querySelector("#yt-injection-scope");
 
-    const statusDotEl = injectionScope.querySelector("#sync-status-dot");
-    syncSession.on("send-sync", () => {
-        statusDotEl.classList.add("sended");
-        setTimeout(() => statusDotEl.classList.remove("sended"), 50);
-    });
-    syncSession.on("sync", () => {
-        statusDotEl.classList.add("received");
-        setTimeout(() => statusDotEl.classList.remove("received"), 50);
-    });
+const syncMenuToggleEl = injectionScope.querySelector("#sync-menu-toggle");
+const syncMenu = injectionScope.querySelector(".sync-menu");
+
+const syncSession = initSyncSession();
+
+const syncFormJoinCreateEl = injectionScope.querySelector("#sync-join-create");
+const sessionIdInput = injectionScope.querySelector("#sync-channel-id");
+const sessionMsOffsetInput = injectionScope.querySelector("#sync-ms-offset");
+const shareSessionBtn = injectionScope.querySelector("#sync-share");
+
+shareSessionBtn.addEventListener("click", () => {
+    const {origin, pathname, search} = window.location;
+    const params = new URLSearchParams(search);
+    params.set("syncId", syncSession.sessionId);
+    console.log("params with syncId", params.toString());
+    const shareUrl = `${origin}${pathname}?${params.toString()}`;
+    copyTextToClipboard(shareUrl);
+
+    // cccruuude
+    shareSessionBtn.classList.add("copied");
+    setTimeout(() => shareSessionBtn.classList.remove("copied"), 2000);
 });
+syncMenuToggleEl.addEventListener("click", () => {
+    syncMenu.classList.toggle("opened");
+    syncMenuToggleEl.classList.toggle("opened");
+});
+syncFormJoinCreateEl.addEventListener("click", (evt) => {
+    const inputSession = sessionIdInput.value;
+    evt.preventDefault();
+    if (inputSession === syncSession.sessionId)
+        syncSession.resetSessionId();
+    else
+        syncSession.changeSessionId(sessionIdInput.value);
+    setTimeout(() => {
+        fillSyncData();
+        console.log("re-fill inputs with syncId");
+    }, 100);
+});
+sessionIdInput.addEventListener("keyup", _setRegenerateJoinValueOfInputId);
+
+function _setRegenerateJoinValueOfInputId() {
+    if (sessionIdInput.value === syncSession.sessionId)
+        syncFormJoinCreateEl.value = "Regen. session";
+    else
+        syncFormJoinCreateEl.value = "Join session";
+}
+
+sessionMsOffsetInput.addEventListener("input", () => {
+    syncSession.userOffsetMs = Number(sessionMsOffsetInput.value);
+});
+
+function fillSyncData() {
+    sessionIdInput.value = syncSession.sessionId;
+    _setRegenerateJoinValueOfInputId();
+}
+
+fillSyncData();
+
+
+const statusDotEl = injectionScope.querySelector("#sync-status-dot");
+syncSession.on("send-sync", () => {
+    statusDotEl.classList.add("sended");
+    setTimeout(() => statusDotEl.classList.remove("sended"), 50);
+});
+syncSession.on("sync", () => {
+    statusDotEl.classList.add("received");
+    setTimeout(() => statusDotEl.classList.remove("received"), 50);
+});
+// });
 
 initSyncSession();
 

@@ -6,7 +6,7 @@ const proxyOptions = {
     changeOrigin: true,
     followRedirects: true,
     hostRewrite: true,
-    logLevel: "debug",
+    // logLevel: "debug",
     router: function (req) {
         const [_, gVidProxyPart, orgSubDomain, ...orgPath] = req.path.split("/");
         const origin = `https://${orgSubDomain}.googlevideo.com`;

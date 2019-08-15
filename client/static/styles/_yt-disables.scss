@@ -7,3 +7,7 @@
 #yt-lang-alert-container {
   display: none !important;
 }
+/* DK: No mobile bloating mealbars */
+div[id^=mealbar] {
+  display: none;
+}
