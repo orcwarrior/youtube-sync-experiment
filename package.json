@@ -28,7 +28,7 @@
     "nodemon": "^1.18.9",
     "rollup": "^1.1.1",
     "socket-ntp": "^0.1.0",
-    "socket.io": "^2.2.0",
+    "socket.io": "^2.4.0",
     "socket.io-client": "^2.2.0",
     "uuid": "^3.3.2"
   },
