@@ -20,7 +20,7 @@
   "license": "ISC",
   "dependencies": {
     "event-emitter-es6": "^1.1.5",
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "harmon": "^1.4.3",
     "http-proxy": "^1.17.0",
     "http-proxy-middleware": "^0.19.1",
